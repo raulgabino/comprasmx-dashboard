@@ -1,9 +1,16 @@
-import { readFileSync, writeFileSync, mkdirSync } from "fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
 import { join } from "path";
 
 const DATA_DIR = join(process.cwd(), "data");
 const OUT_DIR = join(process.cwd(), "public", "data");
 mkdirSync(OUT_DIR, { recursive: true });
+
+// Skip aggregation if source data files don't exist (e.g. Vercel deploy)
+// Pre-aggregated summaries in public/data/ are already committed to the repo
+if (!existsSync(join(DATA_DIR, "datos_contratos_2023.json"))) {
+  console.log("⚠ Datos fuente no encontrados, usando summaries pre-agregados existentes.");
+  process.exit(0);
+}
 
 const FILES = {
   2023: "datos_contratos_2023.json",
