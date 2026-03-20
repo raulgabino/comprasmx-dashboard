@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# Datos fuente JSON (~226MB, ver README para obtenerlos)
+/data/*.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

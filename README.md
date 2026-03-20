@@ -1,36 +1,90 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ComprasMX — Dashboard de Transparencia
 
-## Getting Started
+Dashboard interactivo para explorar y analizar los contratos gubernamentales de Mexico publicados en [ComprasMX](https://comprasmx.buengobierno.gob.mx/) (antes CompraNet).
 
-First, run the development server:
+**Datos:** 447,498 contratos | $2.3 billones de pesos | 2023-2026
+
+## Secciones
+
+- **Panorama General** — KPIs, tendencia de gasto anual, distribuciones por tipo de procedimiento y contratacion
+- **Concentracion** — Analisis de concentracion de proveedores (Pareto, Top 10/50/100)
+- **Adjudicaciones vs Licitaciones** — Comparativa entre metodos de contratacion por institucion
+- **Buscar Proveedores** — Buscador por nombre o RFC con detalles de contratos individuales
+
+## Calidad de datos
+
+El dashboard incluye un sistema de deteccion de anomalias:
+- Registros con monto $0 son excluidos automaticamente
+- Outliers confirmados (montos inflados en el portal fuente) son excluidos y documentados
+- Contratos con montos atipicos (>10x el percentil 99.9) se senalan para revision
+
+## Stack
+
+- [Next.js](https://nextjs.org/) 16 (App Router, static generation)
+- [Recharts](https://recharts.org/) para visualizaciones
+- [Tailwind CSS](https://tailwindcss.com/) v4
+- Datos pre-agregados en build time (sin base de datos)
+
+## Instalacion
 
 ```bash
+# Clonar el repositorio
+git clone https://github.com/tu-usuario/comprasmx-dashboard.git
+cd comprasmx-dashboard
+
+# Instalar dependencias
+npm install
+
+# Colocar los datos fuente (ver seccion "Datos")
+# Los archivos van en /data/
+
+# Desarrollo local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# Build de produccion
+npm run build && npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Datos
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Los archivos JSON fuente (~226MB) no estan incluidos en el repositorio por su tamano. Para obtenerlos:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Descargar los CSVs desde [ComprasMX](https://comprasmx.buengobierno.gob.mx/)
+2. Convertirlos a JSON y colocarlos en `/data/`:
+   - `datos_contratos_2023.json`
+   - `datos_contratos_2024.json`
+   - `datos_contratos_2025.json`
+   - `datos_contratos.json` (2026)
+3. Al ejecutar `npm run dev` o `npm run build`, el script `scripts/aggregate.mjs` genera automaticamente los resumenes en `public/data/`
 
-## Learn More
+Los resumenes pre-agregados (~200KB) si estan incluidos en el repositorio, por lo que el dashboard funciona sin los datos fuente para las visualizaciones principales. El buscador de proveedores requiere los datos fuente.
 
-To learn more about Next.js, take a look at the following resources:
+## Estructura del proyecto
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+dashboard/
+├── data/                    # Datos fuente JSON (no en repo)
+├── public/data/             # Resumenes pre-agregados (en repo)
+├── scripts/
+│   └── aggregate.mjs        # Script de agregacion y calidad de datos
+├── src/
+│   ├── app/                 # Paginas (Next.js App Router)
+│   │   ├── panorama/
+│   │   ├── concentracion/
+│   │   ├── adjudicaciones/
+│   │   ├── proveedores/
+│   │   └── api/             # API routes (contratos, proveedores)
+│   ├── components/
+│   │   ├── charts/          # Componentes de graficas (Recharts)
+│   │   ├── layout/          # Navbar
+│   │   └── ui/              # KPICard, ChartCard, DataQualityNotes
+│   └── lib/                 # Hooks, tipos, formateadores
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Licencia
 
-## Deploy on Vercel
+MIT
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Fuente de datos
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Todos los datos provienen de [ComprasMX](https://comprasmx.buengobierno.gob.mx/), la plataforma oficial del Gobierno de Mexico para transparencia en contrataciones publicas. Los datos son de acceso publico.
