@@ -75,6 +75,15 @@ export interface SummaryData {
   notes: string[];
   registrosExcluidos: number;
   tendencia?: TrendPoint[];
+  institucion?: { sigla: string; nombre: string };
+}
+
+export interface InstitucionIndexEntry {
+  sigla: string;
+  nombre: string;
+  slug: string;
+  totalContratos: number;
+  montoTotal: number;
 }
 
 export interface TrendPoint {

@@ -9,6 +9,7 @@ const SECTIONS = [
   { href: "/concentracion", label: "Concentración" },
   { href: "/adjudicaciones", label: "Adjudicaciones vs Licitaciones" },
   { href: "/proveedores", label: "Buscar Proveedores" },
+  { href: "/instituciones", label: "Instituciones" },
 ];
 
 const YEARS = ["todos", "2023", "2024", "2025", "2026"];
