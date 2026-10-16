@@ -39,6 +39,9 @@ yarn-error.log*
 # Datos fuente JSON (~226MB, ver README para obtenerlos)
 /data/*.json
 
+# Exportaciones por institución (scripts/export-institucion.mjs)
+/exports/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

@@ -294,4 +294,87 @@ allSummary.tendencia = tendencia;
 writeFileSync(join(OUT_DIR, "summary-todos.json"), JSON.stringify(allSummary));
 console.log(`  → summary-todos.json (${allSummary.totalContratos} contratos, $${(allSummary.montoTotal / 1e9).toFixed(1)}mmdp)`);
 
+// ---- Resúmenes por institución ----
+// Edita esta lista para agregar/quitar instituciones. "sigla" debe coincidir
+// exactamente con el campo `inst` tal como aparece en los JSON de /data
+// (columna "Siglas de la Institución" del CSV fuente).
+const INSTITUCIONES_OBJETIVO = [
+  { sigla: "SICT", nombre: "Infraestructura, Comunicaciones y Transportes" },
+  { sigla: "IMT", nombre: "Instituto Mexicano del Transporte" },
+  { sigla: "CAPUFE", nombre: "Caminos y Puentes Federales de Ingresos y Servicios Conexos" },
+  { sigla: "ASA", nombre: "Aeropuertos y Servicios Auxiliares" },
+  { sigla: "AICM", nombre: "Aeropuerto Internacional de la Ciudad de México" },
+  { sigla: "AIFA", nombre: "Aeropuerto Internacional Felipe Ángeles" },
+  { sigla: "STC", nombre: "Sistema de Transporte Colectivo (CDMX)" },
+  { sigla: "TRENMAYA", nombre: "Tren Maya, S.A. de C.V." },
+  { sigla: "FONATUR TREN MAYA", nombre: "Fonatur Tren Maya, S.A. de C.V." },
+  { sigla: "ATTRAPI", nombre: "Agencia de Trenes y Transporte Público Integrado" },
+];
+
+function slugify(s) {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+function institutionQualityNotes(records) {
+  const notes = [];
+  const emptyFecha = records.filter((r) => !r.fechaFirma).length;
+  if (emptyFecha > 0) {
+    const pct = ((emptyFecha / records.length) * 100).toFixed(1);
+    notes.push(
+      `${pct}% de contratos sin fecha de firma (${emptyFecha.toLocaleString("es-MX")} de ${records.length.toLocaleString("es-MX")}).`
+    );
+  }
+  return notes;
+}
+
+const institucionesIndex = [];
+for (const { sigla, nombre } of INSTITUCIONES_OBJETIVO) {
+  const rawRecords = allRecords.filter((r) => r.inst === sigla);
+  if (rawRecords.length === 0) {
+    console.log(`  ⚠ ${sigla}: sin registros en los datos fuente, se omite`);
+    continue;
+  }
+  const cleanRecords = rawRecords.filter((r) => !isKnownOutlier(r));
+  const outliers = detectOutliers(rawRecords);
+  const notes = institutionQualityNotes(rawRecords);
+
+  const summary = aggregate(cleanRecords);
+  summary.institucion = { sigla, nombre };
+  summary.outliers = outliers;
+  summary.notes = notes;
+  summary.registrosExcluidos = rawRecords.length - cleanRecords.length;
+
+  const years = [...new Set(cleanRecords.map((r) => r.anio))].sort();
+  summary.tendencia = years.map((year) => {
+    const yearRecs = cleanRecords.filter((r) => r.anio === year);
+    return {
+      year,
+      label: year === 2026 ? "2026*" : String(year),
+      monto: yearRecs.reduce((s, r) => s + r.monto, 0),
+      contratos: yearRecs.length,
+      proveedores: new Set(yearRecs.map((r) => r.rfc)).size,
+    };
+  });
+
+  const slug = slugify(sigla);
+  writeFileSync(join(OUT_DIR, `summary-inst-${slug}.json`), JSON.stringify(summary));
+  institucionesIndex.push({
+    sigla,
+    nombre,
+    slug,
+    totalContratos: summary.totalContratos,
+    montoTotal: summary.montoTotal,
+  });
+  console.log(
+    `  → summary-inst-${slug}.json (${sigla}: ${summary.totalContratos} contratos, $${(summary.montoTotal / 1e9).toFixed(2)}mmdp)`
+  );
+}
+
+writeFileSync(join(OUT_DIR, "instituciones-index.json"), JSON.stringify(institucionesIndex));
+
 console.log("\nAgregación completada.");
